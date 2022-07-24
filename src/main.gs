@@ -45,20 +45,27 @@ function testPrint()
 {
     Logger.log(CHANNEL_ACCESS_TOKEN);
     Logger.log(sheetID);
-	SendMaterial_txt(0, 0);
+
+	var x = 1; // text is on colum B
+	var day = 0; //y = day
+	SendMaterial_txt(day, x, 0);
 }
 
 //接收使用者訊息
 function doPost(e) {
-  var userData = JSON.parse(e.postData.contents);
-  console.log(userData);
+	var userData = JSON.parse(e.postData.contents);
+	console.log(userData);
 
-  // 取出 replayToken 和發送的訊息文字
-  var replyToken = userData.events[0].replyToken;
-  var groupID = userData.events[0].source.groupId;
-  var sTest = "";
-  sTest = "TestABCD\n"
-  pushMessage(CHANNEL_ACCESS_TOKEN, groupID, sTest);
+	// 取出 replayToken 和發送的訊息文字
+	var replyToken = userData.events[0].replyToken;
+	var groupID = userData.events[0].source.groupId;
+	var sTest = "";
+	sTest = "TestABCD\n"
+	pushMessage(CHANNEL_ACCESS_TOKEN, groupID, sTest);
+
+	var x = 1; // text is on colum B
+	var y = 0; //y = day
+	SendMaterial_txt(y, x, groupID);
 
   try {
     var clientMessage = userData.events[0].message.text;
@@ -123,9 +130,8 @@ function doPost(e) {
 }
 
 // send material_txt to LineGroup
-function SendMaterial_txt(y, targetID) 
+function SendMaterial_txt(y, x, targetID) 
 {
-	var x = 1;
 	if (ss_material_data[y][x] != "")
 	{
 		Logger.log(ss_material_data[y][x]);
