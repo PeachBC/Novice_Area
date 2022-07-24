@@ -10,6 +10,9 @@ var sheetID 				= ss_config_data[1][0]; // google sheet ID
 // load data from tab> material
 var ss_material 			= SS.getSheetByName("material");
 var ss_material_data 		= ss_material.getSheetValues(2, 1, 62, 26); //A2~Z62
+var columText	= 1; // text is on colum B
+var columVideo	= 2; // video is on colum C
+var columImage	= 4; // image/slide is start from colum E
 
 var myID = "";
 var confirmMessage = "您所輸入的資料如下：";
@@ -41,14 +44,18 @@ function getSheetsName(){
   }
 }
 
+
+
 function testPrint()
 {
     Logger.log(CHANNEL_ACCESS_TOKEN);
     Logger.log(sheetID);
 
-	var x = 1; // text is on colum B
 	var day = 0; //y = day
-	SendMaterial_txt(day, x, 0);
+
+	SendMaterial_txt(day, columText, 0);
+	SendMaterial_image(day, columImage, 0);
+	SendMaterial_video(day, columVideo, 0);
 }
 
 //接收使用者訊息
@@ -63,9 +70,11 @@ function doPost(e) {
 	sTest = "TestABCD\n"
 	pushMessage(CHANNEL_ACCESS_TOKEN, groupID, sTest);
 
-	var x = 1; // text is on colum B
-	var y = 0; //y = day
-	SendMaterial_txt(y, x, groupID);
+	var day = 0; //y = day
+
+	SendMaterial_txt(day, columText, groupID);
+	SendMaterial_video(day, columVideo, groupID);
+	SendMaterial_image(day, columImage, groupID);
 
   try {
     var clientMessage = userData.events[0].message.text;
@@ -130,12 +139,36 @@ function doPost(e) {
 }
 
 // send material_txt to LineGroup
-function SendMaterial_txt(y, x, targetID) 
+function SendMaterial_txt(day, colum_text, targetID)
 {
-	if (ss_material_data[y][x] != "")
+	if (ss_material_data[day][colum_text] != "")
 	{
-		Logger.log(ss_material_data[y][x]);
-		pushMessage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[y][x]);
+		Logger.log(ss_material_data[day][colum_text]);
+		pushMessage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][colum_text]);
+	}
+}
+
+// send material_image to LineGroup
+function SendMaterial_image(day, colum_image, targetID)
+{
+	for (x = colum_image; x <= ss_material.getLastRow(); x++)
+	{
+		if (ss_material_data[day][x] != "")
+		{
+			Logger.log(ss_material_data[day][x]);
+			pushImage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][x], ss_material_data[day][x]);
+		}
+	}
+}
+
+// send material_video to LineGroup
+function SendMaterial_video(day, colum_video, targetID)
+{
+	if (ss_material_data[day][colum_video] != "" && ss_material_data[day][colum_video+1] != "")
+	{
+		Logger.log(ss_material_data[day][colum_video]);
+		Logger.log(ss_material_data[day][colum_video+1]);
+		pushVideo(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][colum_video], ss_material_data[day][colum_video+1]);
 	}
 }
 
@@ -228,6 +261,46 @@ function pushMessage(CHANNEL_ACCESS_TOKEN, userID, pushContent) {
       'messages': [{
         'type': 'text',
         'text':pushContent,
+      }],
+    }),
+  });
+}
+
+//主動傳送 Line Bot image給使用者
+function pushImage(CHANNEL_ACCESS_TOKEN, targetID, imageURL, thumbnailURL) {
+  var url = 'https://api.line.me/v2/bot/message/push';
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'to': targetID,
+      'messages': [{
+        'type': 'image',
+		'originalContentUrl': imageURL, // 圖片網址
+		'previewImageUrl': thumbnailURL //縮圖網址
+      }],
+    }),
+  });
+}
+
+//主動傳送 Line Bot video給使用者
+function pushVideo(CHANNEL_ACCESS_TOKEN, targetID, videoURL, thumbnailURL) {
+  var url = 'https://api.line.me/v2/bot/message/push';
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'to': targetID,
+      'messages': [{
+        'type': 'video',
+		'originalContentUrl': videoURL, // 影片網址
+		'previewImageUrl': thumbnailURL //縮圖網址
       }],
     }),
   });
