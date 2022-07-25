@@ -75,20 +75,12 @@ function testDay()
 		day++;
 		Logger.log("day diff:"+day);
 	}
-	SendMaterial_txt(day, columText, 0);
-}
+	var broadcastTargetID = ss_GroupDB_data[0][0]; // hard code as A2
+	Logger.log(broadcastTargetID);
 
-function testPrint()
-{
-    Logger.log(CHANNEL_ACCESS_TOKEN);
-    Logger.log(sheetID);
-
-	// hard code for test
-	var day = 0; //y = day
-
-	SendMaterial_txt(day, columText, 0);
-	SendMaterial_image(day, columImage, 0);
-	SendMaterial_video(day, columVideo, 0);
+	SendMaterial_txt(day, columText, broadcastTargetID);
+	SendMaterial_video(day, columVideo, broadcastTargetID);
+	SendMaterial_image(day, columImage, broadcastTargetID);
 }
 
 //接收使用者訊息
@@ -277,7 +269,7 @@ function disableAutoPost(groupID, sheetID) {
 }
 
 //取得需要發送的訊息
-function getAlarmData() {
+function broadcastMaterial() {
   var TimeNow = new Date();
   var pushContents = [];
   var j = 0;
@@ -301,63 +293,29 @@ function getAlarmData() {
   }
 }
 
-//主動傳送 Line Bot 訊息給使用者
-function pushMessage(CHANNEL_ACCESS_TOKEN, userID, pushContent) {
-  var url = 'https://api.line.me/v2/bot/message/push';
-  UrlFetchApp.fetch(url, {
-    'headers': {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    'method': 'post',
-    'payload': JSON.stringify({
-      'to': userID,
-      'messages': [{
-        'type': 'text',
-        'text':pushContent,
-      }],
-    }),
-  });
-}
-
-//主動傳送 Line Bot image給使用者
-function pushImage(CHANNEL_ACCESS_TOKEN, targetID, imageURL, thumbnailURL) {
-  var url = 'https://api.line.me/v2/bot/message/push';
-  UrlFetchApp.fetch(url, {
-    'headers': {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    'method': 'post',
-    'payload': JSON.stringify({
-      'to': targetID,
-      'messages': [{
-        'type': 'image',
-		'originalContentUrl': imageURL, // 圖片網址
-		'previewImageUrl': thumbnailURL //縮圖網址
-      }],
-    }),
-  });
-}
-
-//主動傳送 Line Bot video給使用者
-function pushVideo(CHANNEL_ACCESS_TOKEN, targetID, videoURL, thumbnailURL) {
-  var url = 'https://api.line.me/v2/bot/message/push';
-  UrlFetchApp.fetch(url, {
-    'headers': {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    'method': 'post',
-    'payload': JSON.stringify({
-      'to': targetID,
-      'messages': [{
-        'type': 'video',
-		'originalContentUrl': videoURL, // 影片網址
-		'previewImageUrl': thumbnailURL //縮圖網址
-      }],
-    }),
-  });
+//取得需要發送的訊息
+function getAlarmData() {
+  var TimeNow = new Date();
+  var pushContents = [];
+  var j = 0;
+  for (var i = 2; i < lastRow; i++) {
+    if (sheetData[i][4] === 0) {
+      var startTime = alarmTimeConvert(sheetData[i][1], sheetData[i][2]);
+      var endTime = alarmTimeConvert(sheetData[i][1], sheetData[i][6]);
+      if (startTime < TimeNow && TimeNow < endTime) {
+        pushContents[j] = [sheetData[i][0], sheetData[i][3]];
+        j++;
+      }
+    }
+  }
+  if (pushContents.length != 0) {
+    for (var i = 0; i < 1; i++) {
+      for (var j = 0; j < pushContents.length; j++) {
+        pushMessage(CHANNEL_ACCESS_TOKEN, pushContents[j][0], pushContents[j][1]);
+      }
+      Utilities.sleep(1000);
+    }
+  }
 }
 
 //回送 Line Bot 訊息給使用者
