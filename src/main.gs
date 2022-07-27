@@ -59,12 +59,12 @@ function doPost(e) {
 	var groupID = userData.events[0].source.groupId;
 	var sTest = "";
 	sTest = "TestABCD\n"
-	pushMessage(CHANNEL_ACCESS_TOKEN, groupID, sTest);
+	//pushMessage(CHANNEL_ACCESS_TOKEN, groupID, sTest);
+	Logger.log(CHANNEL_ACCESS_TOKEN);
+	Logger.log(sheetID);
 
-// todo, 用群組ID 找對應的 發文開始日期, 發文時間
-// 計算第幾天
 	// colum C = StartDate, Colum E = StartTime
-	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf();
+	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
 	var td=new Date().valueOf();	// current date
 	var sec=1000;
 	var min=60*sec;
@@ -75,7 +75,6 @@ function doPost(e) {
 	var hours=Math.floor(diff%day/hour);
 	var minutes=Math.floor(diff%day%hour/min);
 	Logger.log('%s days %s hours %s minutes',days,hours,minutes);
-    Logger.log(td);
 
 	var day = days;
 	if (hour > 0 ||  minutes > 0)
@@ -83,105 +82,21 @@ function doPost(e) {
 		day++;
 		Logger.log("day diff:"+day);
 	}
-// 發送每天訊息
-	SendMaterial_txt(day, columText, groupID);
-	SendMaterial_video(day, columVideo, groupID);
-	SendMaterial_image(day, columImage, groupID);
 
-  try {
-    var clientMessage = userData.events[0].message.text;
-    if (clientMessage.toLowerCase() != enableWord.toLowerCase() && clientMessage.toLowerCase() != disableWord.toLowerCase()) {
-      // ignore;
-      return;
-    }
-    if (clientMessage.toLowerCase() == disableWord.toLowerCase()) {
-      disableAutoPost(groupID, sheetID);
-      return;
-    }
-    var replyData = getUserAnswer(groupID, clientMessage);
-  }
-  catch(err) {
-    var clientMessage = userData.events[0].postback.data;
-    switch (clientMessage) {
-      case "DateMessage":
-        clientMessage = userData.events[0].postback.params.date;
-        var replyData = getUserAnswer(groupID, clientMessage);
-        break;
+//	ss_GroupDB_data[0][0].setValue(groupID); // 這行有BUG
+//	var broadcastTargetID = ss_GroupDB_data[0][0]; // hard code as A2
+//	Logger.log(broadcastTargetID);
 
-      case "TimeMessage":
-        clientMessage = userData.events[0].postback.params.time;
-        var replyData = getUserAnswer(groupID, clientMessage);
-        break;
+// active push, max up to 500
+//	SendMaterial_txt(day, columText, broadcastTargetID);
+//	SendMaterial_video(day, columVideo, broadcastTargetID);
+//	SendMaterial_image(day, columImage, broadcastTargetID);
 
-      default:
-        var replyData = checkConfirmData(CHANNEL_ACCESS_TOKEN, groupID, clientMessage, replyToken);
-    }
-  }
-
-  var QandO = [sheetData[0], sheetData[1], sheetData[replyData[0] - 1]];
-  switch (replyData[1]) {
-
-    case -2:
-      return;
-    case -1:
-      var replyMessage = cancelMessage;
-      break;
-    case 0:
-      var replyMessage = confirmMessage + "\n";
-      replyMessage += "提醒時間：" + alarmTimeConvert(QandO[2][1], clientMessage) + "\n"; // 有BUG 無法正常顯示
-      replyMessage += "提醒事項：" + clientMessage;
-      sendConfirmMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage);
-      return;
-    case 1:
-      var replyMessage = finishTitle;
-      break;
-    case 2:
-      pushMessage(CHANNEL_ACCESS_TOKEN, groupID, welcomeTitle);
-      var replyMessage =  QandO[0][replyData[1] - 1];
-      sendDateMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage);
-      return;
-    case 3:
-      var replyMessage =  QandO[0][replyData[1] - 1];
-      sendTimeMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage);
-      return;
-    default:
-      var replyMessage = QandO[0][replyData[1] - 1] + "\n" + QandO[1][replyData[1] - 1]; /// 打印D1 D2
-  }
-  sendReplyMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage);
-}
-
-// send material_txt to LineGroup
-function SendMaterial_txt(day, colum_text, targetID)
-{
-	if (ss_material_data[day][colum_text] != "")
-	{
-		Logger.log(ss_material_data[day][colum_text]);
-		pushMessage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][colum_text]);
-	}
-}
-
-// send material_image to LineGroup
-function SendMaterial_image(day, colum_image, targetID)
-{
-	for (x = colum_image; x <= ss_material.getLastRow(); x++)
-	{
-		if (ss_material_data[day][x] != "")
-		{
-			Logger.log(ss_material_data[day][x]);
-			pushImage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][x], ss_material_data[day][x]);
-		}
-	}
-}
-
-// send material_video to LineGroup
-function SendMaterial_video(day, colum_video, targetID)
-{
-	if (ss_material_data[day][colum_video] != "" && ss_material_data[day][colum_video+1] != "")
-	{
-		Logger.log(ss_material_data[day][colum_video]);
-		Logger.log(ss_material_data[day][colum_video+1]);
-		pushVideo(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][colum_video], ss_material_data[day][colum_video+1]);
-	}
+var clientMessage_DAY = userData.events[0].message.text;
+// passive reply
+	//SendReplyMaterial_txt(day, columText, replyToken);
+	//SendReplyMaterial_video(day, columVideo, replyToken);
+	SendReplyMaterial_image(clientMessage_DAY, columImage, replyToken);
 }
 
 //判斷使用者回答到第幾題
@@ -282,25 +197,6 @@ function getAlarmData() {
       Utilities.sleep(1000);
     }
   }
-}
-
-//回送 Line Bot 訊息給使用者
-function sendReplyMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage) {
-  var url = 'https://api.line.me/v2/bot/message/reply';
-  UrlFetchApp.fetch(url, {
-    'headers': {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    'method': 'post',
-    'payload': JSON.stringify({
-      'replyToken': replyToken,
-      'messages': [{
-        'type': 'text',
-        'text':replyMessage,
-      }],
-    }),
-  });
 }
 
 //分析確認按鈕按下的時機

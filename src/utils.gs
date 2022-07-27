@@ -1,4 +1,3 @@
-
 //主動傳送 Line Bot 訊息給使用者
 function pushMessage(CHANNEL_ACCESS_TOKEN, userID, pushContent) {
   var url = 'https://api.line.me/v2/bot/message/push';
@@ -30,7 +29,7 @@ function pushImage(CHANNEL_ACCESS_TOKEN, targetID, imageURL, thumbnailURL) {
     'payload': JSON.stringify({
       'to': targetID,
       'messages': [{
-        'type': 'image',
+		'type': 'image',
 		'originalContentUrl': imageURL, // 圖片網址
 		'previewImageUrl': thumbnailURL //縮圖網址
       }],
@@ -56,4 +55,131 @@ function pushVideo(CHANNEL_ACCESS_TOKEN, targetID, videoURL, thumbnailURL) {
       }],
     }),
   });
+}
+
+// send material_txt to LineGroup
+function SendMaterial_txt(day, colum_text, targetID)
+{
+	if (ss_material_data[day][colum_text] != "")
+	{
+		Logger.log(ss_material_data[day][colum_text]);
+		pushMessage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][colum_text]);
+	}
+}
+
+// send material_image to LineGroup
+function SendMaterial_image(day, colum_image, targetID)
+{
+	for (x = colum_image; x <= ss_material.getLastRow(); x++)
+	{
+		if (ss_material_data[day][x] != "")
+		{
+			Logger.log(ss_material_data[day][x]);
+			pushImage(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][x], ss_material_data[day][x]);
+		}
+	}
+}
+
+// send material_video to LineGroup
+function SendMaterial_video(day, colum_video, targetID)
+{
+	if (ss_material_data[day][colum_video] != "" && ss_material_data[day][colum_video+1] != "")
+	{
+		Logger.log(ss_material_data[day][colum_video]);
+		Logger.log(ss_material_data[day][colum_video+1]);
+		pushVideo(CHANNEL_ACCESS_TOKEN, targetID, ss_material_data[day][colum_video], ss_material_data[day][colum_video+1]);
+	}
+}
+
+//回送 Line Bot 訊息給使用者
+function sendReplyMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage) {
+  var url = 'https://api.line.me/v2/bot/message/reply';
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'replyToken': replyToken,
+      'messages': [{
+        'type': 'text',
+        'text':replyMessage,
+      }],
+    }),
+  });
+}
+
+//回送 Line Bot 訊息給使用者
+function sendReplyImage(CHANNEL_ACCESS_TOKEN, replyToken, imageURL, thumbnailURL) {
+  var url = 'https://api.line.me/v2/bot/message/reply';
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'replyToken': replyToken,
+      'messages': [{
+		'type': 'image',
+		'originalContentUrl': imageURL, // 圖片網址
+		'previewImageUrl': thumbnailURL //縮圖網址
+      }],
+    }),
+  });
+}
+
+//回送 Line Bot 訊息給使用者
+function sendReplyVideo(CHANNEL_ACCESS_TOKEN, replyToken, videoURL, thumbnailURL) {
+  var url = 'https://api.line.me/v2/bot/message/reply';
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'replyToken': replyToken,
+      'messages': [{
+        'type': 'video',
+		'originalContentUrl': videoURL, // 影片網址
+		'previewImageUrl': thumbnailURL //縮圖網址
+      }],
+    }),
+  });
+}
+
+// send material_txt to LineGroup
+function SendReplyMaterial_txt(day, colum_text, replyToken)
+{
+	if (ss_material_data[day][colum_text] != "")
+	{
+		Logger.log(ss_material_data[day][colum_text]);
+		sendReplyMessage(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][colum_text]);
+	}
+}
+
+// send material_image to LineGroup
+function SendReplyMaterial_image(day, colum_image, replyToken)
+{
+	for (x = colum_image; x <= ss_material.getLastRow(); x++)
+	{
+		if (ss_material_data[day][x] != "")
+		{
+			Logger.log(ss_material_data[day][x]);
+			sendReplyImage(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][x], ss_material_data[day][x])
+		}
+	}
+}
+
+// send material_video to LineGroup
+function SendReplyMaterial_video(day, colum_video, replyToken)
+{
+	if (ss_material_data[day][colum_video] != "" && ss_material_data[day][colum_video+1] != "")
+	{
+		Logger.log(ss_material_data[day][colum_video]);
+		Logger.log(ss_material_data[day][colum_video+1]);
+		sendReplyVideo(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][colum_video], ss_material_data[day][colum_video+1])
+	}
 }

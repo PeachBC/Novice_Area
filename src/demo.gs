@@ -13,8 +13,8 @@ function testPrint()
 
 function testDay()
 {
-    Logger.log(CHANNEL_ACCESS_TOKEN);
-    Logger.log(sheetID);
+	Logger.log(CHANNEL_ACCESS_TOKEN);
+	Logger.log(sheetID);
 
 	// colum C = StartDate, Colum E = StartTime
 	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
