@@ -168,7 +168,7 @@ function SendReplyMaterial_image(day, colum_image, replyToken)
 		if (ss_material_data[day][x] != "")
 		{
 			Logger.log(ss_material_data[day][x]);
-			sendReplyImage(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][x], ss_material_data[day][x])
+			sendReplyImage(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][x], ss_material_data[day][x]);
 		}
 	}
 }
@@ -180,6 +180,53 @@ function SendReplyMaterial_video(day, colum_video, replyToken)
 	{
 		Logger.log(ss_material_data[day][colum_video]);
 		Logger.log(ss_material_data[day][colum_video+1]);
-		sendReplyVideo(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][colum_video], ss_material_data[day][colum_video+1])
+		sendReplyVideo(CHANNEL_ACCESS_TOKEN, replyToken, ss_material_data[day][colum_video], ss_material_data[day][colum_video+1]);
+	}
+}
+
+//回送 Line Bot 訊息給使用者
+function sendNotifyMessage(CHANNEL_ACCESS_TOKEN, replyMessage) {
+  var url = 'https://notify-api.line.me/api/notify';
+  UrlFetchApp.fetch(url, {
+    'headers': {'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN},
+    'method': 'post',
+    'payload':{'message': replyMessage},
+  });
+}
+
+//回送 Line Bot 訊息給使用者
+function sendNotifyImage(CHANNEL_ACCESS_TOKEN, imageURL, thumbnailURL) {
+  var url = 'https://notify-api.line.me/api/notify';
+  UrlFetchApp.fetch(url, {
+    'headers': {'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN},
+    'method': 'post',
+    'payload': {
+		'message': ' ',
+		'imageFullsize': imageURL,
+		'imageThumbnail':thumbnailURL,
+		},
+  });
+}
+
+// send material_txt to LineGroup
+function SendNotifyMaterial_txt(day, colum_text)
+{
+	if (ss_material_data[day][colum_text] != "")
+	{
+		Logger.log(ss_material_data[day][colum_text]);
+		sendNotifyMessage(CHANNEL_ACCESS_TOKEN_LINENOTIFY, "\n"+ss_material_data[day][colum_text]);
+	}
+}
+
+// send material_image to LineGroup
+function SendNotifyMaterial_image(day, colum_image)
+{
+	for (x = colum_image; x <= ss_material.getLastRow() && ss_material_data[day][x] != ""; x++)
+	{
+		if (ss_material_data[day][x] != "")
+		{
+			Logger.log(ss_material_data[day][x]);
+			sendNotifyImage(CHANNEL_ACCESS_TOKEN_LINENOTIFY, ss_material_data[day][x], ss_material_data[day][x]);
+		}
 	}
 }

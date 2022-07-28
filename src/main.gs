@@ -5,6 +5,7 @@ var SS 						= SpreadsheetApp.getActive();
 var ss_config 				= SS.getSheetByName("config");
 var ss_config_data 			= ss_config.getSheetValues(2, 2, 20, 2); //B2~B20
 var CHANNEL_ACCESS_TOKEN 	= ss_config_data[0][0].replace(/\r?\n|\r/g, ""); //line bot token	，並消除換行符號（避免有人複製貼上時複製到換行符號）
+
 var sheetID 				= ss_config_data[1][0]; // google sheet ID
 
 // load data from tab: material
@@ -17,7 +18,7 @@ var columImage	= 4; // image/slide is start from colum E
 // load data from tab: GroupDB
 var ss_GroupDB 				= SS.getSheetByName("GroupDB");
 var ss_GroupDB_data 		= ss_GroupDB.getSheetValues(2, 1, 51, 7); //A2~G51, max support group count = 50
-
+var CHANNEL_ACCESS_TOKEN_LINENOTIFY 	= ss_GroupDB_data[0][5].replace(/\r?\n|\r/g, ""); //F2, line notify token	，並消除換行符號（避免有人複製貼上時複製到換行符號）
 
 var myID = "";
 var confirmMessage = "您所輸入的資料如下：";
@@ -339,4 +340,29 @@ function getImageDatafromGoogleDrive() {
   imageData = imageData.concat(Utilities.newBlob("\r\n--" + boundary + "--\r\n").getBytes());
   sendImagetoLineNotify(imageData, token, boundary);
 }
+
+function TimerNotify() {
+	// colum C = StartDate, Colum E = StartTime
+	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
+	var td=new Date().valueOf();	// current date
+	var sec=1000;
+	var min=60*sec;
+	var hour=60*min;
+	var day=24*hour;
+	var diff=td-hd;
+	var days=Math.floor(diff/day);
+	var hours=Math.floor(diff%day/hour);
+	var minutes=Math.floor(diff%day%hour/min);
+	Logger.log('%s days %s hours %s minutes',days,hours,minutes);
+
+	var day = days;
+	if (hour > 0 ||  minutes > 0)
+	{
+		day++;
+		Logger.log("day diff:"+day);
+	}
+	SendNotifyMaterial_txt(day, columText);
+	SendNotifyMaterial_image(day, columImage);
+}
+
 //程式碼結束
