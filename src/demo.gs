@@ -1,41 +1,79 @@
 function testPrint()
 {
     Logger.log(CHANNEL_ACCESS_TOKEN);
-    Logger.log(sheetID);
+    Logger.log(ss_GroupDB.getLastRow());
 
+	var Today = new Date;
+	var Today_date = Today.getDate();
+	var Today_Month = Today.getMonth()+1;
 
-	var now = new Date();
-	var nowDate = now.getDate();
-	var nowMonth = now.getMonth()+1;
-	Logger.log(nowDate);
-	Logger.log(nowMonth);
-}
+		Logger.log(Today_date + "= Today_date.");
 
-function testDay()
-{
-	Logger.log(CHANNEL_ACCESS_TOKEN);
-	Logger.log(sheetID);
-
-	// colum C = StartDate, Colum E = StartTime
-	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
-
-	var td=new Date().valueOf();	// current date
-	var sec=1000;
-	var min=60*sec;
-	var hour=60*min;
-	var day=24*hour;
-	var diff=td-hd;
-	var days=Math.floor(diff/day);
-	var hours=Math.floor(diff%day/hour);
-	var minutes=Math.floor(diff%day%hour/min);
-	Logger.log('%s days %s hours %s minutes',days,hours,minutes);
-
-	var day = days;
-	if (hour > 0 ||  minutes > 0)
+	if (Today_date > 30)
 	{
-		day++;
-		Logger.log("day diff:"+day);
+		Logger.log(Today_date + " is out of range.");
+		return;
 	}
-	var broadcastTargetID = ss_GroupDB_data[0][0]; // hard code as A2
-	Logger.log(broadcastTargetID);
+	for (var i = 0; i < ss_GroupDB.getLastRow()-1; i++)
+	{
+		// 確認 有enable 且 有token
+		if (ss_GroupDB_data[i][columEnable] == 1 && ss_GroupDB_data[i][columnotifyToken] !="")
+		{
+			// 判斷 要發哪天文章
+			if (Today_Month == ss_GroupDB_data[i][columStartMonth])
+			{
+				DateBase = 0;
+			}
+			else if (Today_Month == ss_GroupDB_data[i][columEndMonth])
+			{
+				DateBase = secondRoundBase;
+			}
+			else
+			{
+				Logger.log(Today_Month+" is not in the range between"+ ss_GroupDB_data[i][columStartMonth]+" to "+ss_GroupDB_data[i][columEndMonth]);
+				continue;
+			}
+			var Day = Today_date + DateBase;
+			
+			var dayinfo = Day + ColumRecord;
+
+			if (ss_GroupDB_data[i][dayinfo-1] == 1)
+			{
+				Logger.log("已發過影片 > 發文");
+				SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken]);
+				SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken]);
+
+				ss_GroupDB.getRange(i+2, dayinfo).setValue(2);
+			}
+			else
+			{
+          Logger.log("已發過/未發過影片 跟 文字 & 圖片. Day:"+Day);
+			}
+
+			//例外處理 for day 1 (if 大家早安, 發 day 0文章)
+			if (Day == 1)
+			{
+				Day = 0;
+        dayinfo = Day + ColumRecord;
+
+        if (ss_GroupDB_data[i][dayinfo-1] == 1)
+        {
+          Logger.log("已發過影片 > 發文");
+          SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken]);
+          SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken]);
+
+          ss_GroupDB.getRange(i+2, dayinfo).setValue(2);
+        }
+        else
+        {
+          Logger.log("已發過/未發過影片 跟 文字 & 圖片. Day:"+Day);
+        }
+			}
+
+		}
+		else
+		{
+			Logger.log("Row:"+ i +" "+ ss_GroupDB_data[i][columEnable] + " " + ss_GroupDB_data[i][columnotifyToken]+ ", disable or no token");
+		}
+	}
 }

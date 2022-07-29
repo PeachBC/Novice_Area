@@ -209,24 +209,24 @@ function sendNotifyImage(CHANNEL_ACCESS_TOKEN, imageURL, thumbnailURL) {
 }
 
 // send material_txt to LineGroup
-function SendNotifyMaterial_txt(day, colum_text)
+function SendNotifyMaterial_txt(day, colum_text, notifytoken)
 {
 	if (ss_material_data[day][colum_text] != "")
 	{
 		Logger.log(ss_material_data[day][colum_text]);
-		sendNotifyMessage(CHANNEL_ACCESS_TOKEN_LINENOTIFY, "\n"+ss_material_data[day][colum_text]);
+		sendNotifyMessage(notifytoken, "\n"+ss_material_data[day][colum_text]);
 	}
 }
 
 // send material_image to LineGroup
-function SendNotifyMaterial_image(day, colum_image)
+function SendNotifyMaterial_image(day, colum_image, notifytoken)
 {
 	for (x = colum_image; x <= ss_material.getLastRow() && ss_material_data[day][x] != ""; x++)
 	{
 		if (ss_material_data[day][x] != "")
 		{
 			Logger.log(ss_material_data[day][x]);
-			sendNotifyImage(CHANNEL_ACCESS_TOKEN_LINENOTIFY, ss_material_data[day][x], ss_material_data[day][x]);
+			sendNotifyImage(notifytoken, ss_material_data[day][x], ss_material_data[day][x]);
 		}
 	}
 }
