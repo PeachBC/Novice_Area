@@ -3,12 +3,12 @@ function testPrint()
     Logger.log(CHANNEL_ACCESS_TOKEN);
     Logger.log(sheetID);
 
-	// hard code for test
-	var day = 0; //y = day
 
-	SendMaterial_txt(day, columText, 0);
-	SendMaterial_video(day, columVideo, 0);
-	SendMaterial_image(day, columImage, 0);
+	var now = new Date();
+	var nowDate = now.getDate();
+	var nowMonth = now.getMonth()+1;
+	Logger.log(nowDate);
+	Logger.log(nowMonth);
 }
 
 function testDay()
@@ -38,8 +38,4 @@ function testDay()
 	}
 	var broadcastTargetID = ss_GroupDB_data[0][0]; // hard code as A2
 	Logger.log(broadcastTargetID);
-
-	SendMaterial_txt(day, columText, broadcastTargetID);
-	SendMaterial_video(day, columVideo, broadcastTargetID);
-	SendMaterial_image(day, columImage, broadcastTargetID);
 }

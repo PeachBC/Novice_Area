@@ -20,7 +20,6 @@ var ss_GroupDB 				= SS.getSheetByName("GroupDB");
 var ss_GroupDB_data 		= ss_GroupDB.getSheetValues(2, 1, 51, 7); //A2~G51, max support group count = 50
 var CHANNEL_ACCESS_TOKEN_LINENOTIFY 	= ss_GroupDB_data[0][5].replace(/\r?\n|\r/g, ""); //F2, line notify token	，並消除換行符號（避免有人複製貼上時複製到換行符號）
 
-var myID = "";
 var confirmMessage = "您所輸入的資料如下：";
 var cancelMessage = "您所輸入的資料已取消";
 var welcomeTitle = "定時提醒系統，請輸入相關資料進行設定";
@@ -42,13 +41,6 @@ var sheet_GroupList_lastRow = sheet_GroupList.getLastRow();
 var sheet_GroupList_lastColumn = sheet_GroupList.getLastColumn();
 var sheet_GroupList_Data = sheet_GroupList.getSheetValues(2, 1, sheet_GroupList_lastRow, sheet_GroupList_lastColumn);
 
-function getSheetsName(){
-  let ss = SpreadsheetApp.getActive();
-  let sheets = ss.getSheets();
-  for (let i = 0; i < sheets.length; i ++){
-    Logger.log(sheets[i].getName())
-  }
-}
 
 //接收使用者訊息
 function doPost(e) {
@@ -58,87 +50,40 @@ function doPost(e) {
 	// 取出 replayToken 和發送的訊息文字
 	var replyToken = userData.events[0].replyToken;
 	var groupID = userData.events[0].source.groupId;
-	var sTest = "";
-	sTest = "TestABCD\n"
-	//pushMessage(CHANNEL_ACCESS_TOKEN, groupID, sTest);
+
 	Logger.log(CHANNEL_ACCESS_TOKEN);
 	Logger.log(sheetID);
+	checkGroup(groupID);
+	var Today = new Date;
+	var Today_date = Today.getDate();
+	var Today_Month = Today.getMonth()+1;
 
-	// colum C = StartDate, Colum E = StartTime
-	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
-	var td=new Date().valueOf();	// current date
-	var sec=1000;
-	var min=60*sec;
-	var hour=60*min;
-	var day=24*hour;
-	var diff=td-hd;
-	var days=Math.floor(diff/day);
-	var hours=Math.floor(diff%day/hour);
-	var minutes=Math.floor(diff%day%hour/min);
-	Logger.log('%s days %s hours %s minutes',days,hours,minutes);
-
-	var day = days;
-	if (hour > 0 ||  minutes > 0)
-	{
-		day++;
-		Logger.log("day diff:"+day);
-	}
-
-//	ss_GroupDB_data[0][0].setValue(groupID); // 這行有BUG
-//	var broadcastTargetID = ss_GroupDB_data[0][0]; // hard code as A2
-//	Logger.log(broadcastTargetID);
-
-// active push, max up to 500
-//	SendMaterial_txt(day, columText, broadcastTargetID);
-//	SendMaterial_video(day, columVideo, broadcastTargetID);
-//	SendMaterial_image(day, columImage, broadcastTargetID);
-
-var clientMessage_DAY = userData.events[0].message.text;
-// passive reply
-	//SendReplyMaterial_txt(day, columText, replyToken);
-	//SendReplyMaterial_video(day, columVideo, replyToken);
-	SendReplyMaterial_image(clientMessage_DAY, columImage, replyToken);
+	var clientMessage_DAY = userData.events[0].message.text;
+	// passive reply
+	SendReplyMaterial_video(clientMessage_DAY, columVideo, replyToken);
+	//SendReplyMaterial_video(Today_date, columVideo, replyToken);
 }
 
-//判斷使用者回答到第幾題
-function getUserAnswer(groupID, clientMessage) {
-  var returnData = [];
-
-  for (var i = 0; i < lastRow; i++) {
-    if (sheetData[i][0] == groupID && sheetData[i][lastColumn - 1] != "") {
+function checkGroup(groupID) {
+  for (var i = 0; i < ss_GroupDB.getLastRow(); i++) {
+    if (ss_GroupDB_data[i][0] == groupID && ss_GroupDB_data[i][1] !="") {
       Logger.log('ignore to regist groupID(%s) due to it has regist before at row(%d)', groupID, i)
       return;
     }
-
-    if (sheetData[i][0] == groupID && sheetData[i][lastColumn - 1] == "") {
-      // 先嘗試找到空的欄位
-      for (var j = 1; j <= lastColumn -1; j++) {
-        if (sheetData[i][j] == "") {break;}
-      }
-      // 把前一個動作回傳的值 填入空欄位
-      sheet.getRange(i + 1, j + 1).setValue(clientMessage);
-      //如果使用者已經回答了觸發時間(Colum C的問題)，就把完成時間填上。不然就送出下一題給使用者
-      if (j + 4 == lastColumn) {
-        returnData = [i + 1, 0];
-      }
-      else {
-        returnData = [i + 1, j + 2];
-      }
-      return returnData;
-      break;
-    }
   }
-  //如果使用者還沒有回答過任何資料，就新增加一列在最後，把使用者ID輸入並開始送出題目
-  sheet.insertRowAfter(lastRow);
-  sheet.getRange(lastRow + 1, 1).setValue(groupID);
-  returnData = [lastRow + 1, 2];
-  return returnData;
-}
+	// 如果群組未註冊過
+	// 註冊群組ID
+	ss_GroupDB.insertRowAfter(ss_GroupDB.getLastRow());
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow() + 1, 1).setValue(groupID);
 
-//把試算表內的啟動時間轉換成正確的時間格式
-function alarmTimeConvert(dateData, timeData) {
-  var alarmTime = new Date ((+new Date(dateData)) + (+new Date(timeData)) - (+new Date('1899/12/30 00:00:00'))) ;
-  return alarmTime;
+	var now = new Date();
+	var nowDate = now.getDate();
+	var nowMonth = now.getMonth()+1;
+
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 2).setValue(1);			// enable 
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 3).setValue(nowMonth+1);	// 開始月份
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 4).setValue(nowMonth+2);	// 結束月份
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 7).setValue(nowMonth+"/"+nowDate);		// 註冊時間
 }
 
 //把「是否提醒」數值調成0
@@ -150,219 +95,14 @@ function disableAutoPost(groupID, sheetID) {
   }
 }
 
-//取得需要發送的訊息
-function broadcastMaterial() {
-  var TimeNow = new Date();
-  var pushContents = [];
-  var j = 0;
-  for (var i = 2; i < lastRow; i++) {
-    if (sheetData[i][4] === 0) {
-      var startTime = alarmTimeConvert(sheetData[i][1], sheetData[i][2]);
-      var endTime = alarmTimeConvert(sheetData[i][1], sheetData[i][6]);
-      if (startTime < TimeNow && TimeNow < endTime) {
-        pushContents[j] = [sheetData[i][0], sheetData[i][3]];
-        j++;
-      }
-    }
-  }
-  if (pushContents.length != 0) {
-    for (var i = 0; i < 1; i++) {
-      for (var j = 0; j < pushContents.length; j++) {
-        pushMessage(CHANNEL_ACCESS_TOKEN, pushContents[j][0], pushContents[j][1]);
-      }
-      Utilities.sleep(1000);
-    }
-  }
-}
-
-//取得需要發送的訊息
-function getAlarmData() {
-  var TimeNow = new Date();
-  var pushContents = [];
-  var j = 0;
-  for (var i = 2; i < lastRow; i++) {
-    if (sheetData[i][4] === 0) {
-      var startTime = alarmTimeConvert(sheetData[i][1], sheetData[i][2]);
-      var endTime = alarmTimeConvert(sheetData[i][1], sheetData[i][6]);
-      if (startTime < TimeNow && TimeNow < endTime) {
-        pushContents[j] = [sheetData[i][0], sheetData[i][3]];
-        j++;
-      }
-    }
-  }
-  if (pushContents.length != 0) {
-    for (var i = 0; i < 1; i++) {
-      for (var j = 0; j < pushContents.length; j++) {
-        pushMessage(CHANNEL_ACCESS_TOKEN, pushContents[j][0], pushContents[j][1]);
-      }
-      Utilities.sleep(1000);
-    }
-  }
-}
-
-//分析確認按鈕按下的時機
-function checkConfirmData(CHANNEL_ACCESS_TOKEN, groupID, clientMessage, replyToken) {
-  var returnData = [];
-  for (var i = lastRow - 1; i >= 0; i--) {
-    if (sheetData[i][0] == groupID && sheetData[i][lastColumn - 4] != "" && sheetData[i][lastColumn - 1] == "") {
-      if (clientMessage == "DecideConfirm") {
-        sheet.getRange(i + 1, lastColumn - 1).setValue(1);
-        sheet.getRange(i + 1, lastColumn).setValue(Date());
-        returnData = [i + 1, 1];
-      }
-      else if (clientMessage == "DecideCancel"){
-        returnData = [i + 1, -1];
-        sheet.deleteRow(i + 1);
-      }
-      return returnData;
-      break;
-    }
-  }
-  //使用者亂按舊的確認或刪除按鈕時的處理方式
-  returnData = [1, -2];
-  return returnData;
-}
-
-//傳送選擇日期按鈕給使用者（使用 Line Template datetimepicker）
-function sendDateMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage) {
-  var dt = new Date();
-  UrlFetchApp.fetch("https://api.line.me/v2/bot/message/reply", {
-    "headers": {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN,
-    },
-    "method": "post",
-    "payload": JSON.stringify({
-      "replyToken": replyToken,
-      "messages": [{
-        "type": "template",
-        "altText": replyMessage,
-        "template": {
-          "type": "buttons",
-          "text": replyMessage,
-          "actions": [
-            {
-              "type":"datetimepicker",
-              "label":"點選並輸入提醒日期",
-              "data":"DateMessage",
-              "mode":"date",
-            }
-          ]
-        }
-      }],
-    }),
-  });
-}
-
-//傳送選擇時間按鈕給使用者（使用 Line Template datetimepicker）
-function sendTimeMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage) {
-  var dt = new Date();
-  UrlFetchApp.fetch("https://api.line.me/v2/bot/message/reply", {
-    "headers": {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN,
-    },
-    "method": "post",
-    "payload": JSON.stringify({
-      "replyToken": replyToken,
-      "messages": [{
-        "type": "template",
-        "altText": replyMessage,
-        "template": {
-          "type": "buttons",
-          "text": replyMessage,
-          "actions": [
-            {
-              "type":"datetimepicker",
-              "label":"點選並輸入提醒時間",
-              "data":"TimeMessage",
-              "mode":"time",
-            }
-          ]
-        }
-      }],
-    }),
-  });
-}
-
-//傳送確認按鈕給使用者（使用 Line Template Confirm）
-function sendConfirmMessage(CHANNEL_ACCESS_TOKEN, replyToken, replyMessage) {
-
-  UrlFetchApp.fetch("https://api.line.me/v2/bot/message/reply", {
-    "headers": {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN,
-    },
-    "method": "post",
-    "payload": JSON.stringify({
-      "replyToken": replyToken,
-      "messages": [{
-        "type": "template",
-        "altText": replyMessage,
-        "template": {
-          "type": "confirm",
-          "text": replyMessage,
-          "actions": [
-            {
-              "type": "postback",
-              "label": "確認",
-              "data": "DecideConfirm"
-            },
-            {
-              "type": "postback",
-              "label": "取消",
-              "data": "DecideCancel"
-            }
-          ]
-        }
-      }],
-    }),
-  });
-}
-//new for image part
-//程式碼開始
-
-function getImageDatafromGoogleDrive() {
-  var token = "V9HeRF7Ov7B2/Rpkvy3divGBDq1xAsN0ff7iaIvbWtg+zJezUmsGC1msld09T34b631elijkjjZWd/kU/gpA18bDPAZ/UJZI6e56B7naZPj3ntkcjyIUcDIKdyh6UVjEI9xsYlP9fn55OF3GPrwRxAdB04t89/1O/w1cDnyilFU=";
-  var imageId = "1jGcxNDCZhMYPSkF6TWq6uAlmKJTCVcbI";
-
-  var message = " ";
-  var blob = DriveApp.getFileById(imageId).getBlob();
-  var boundary = "Boris Lu @ http://www.youtube.com/c/borispcp";
-  var imageData = Utilities.newBlob(
-      "--" + boundary + "\r\n"
-      + "Content-Disposition: form-data; name=\"message\"; \r\n\r\n" + message + "\r\n"
-      + "--" + boundary + "\r\n"
-      + "Content-Disposition: form-data; name=\"imageFile\"; filename=\"" + blob.getName() + "\"\r\n"
-      + "Content-Type: " + blob.getContentType() +"\r\n\r\n"
-      ).getBytes();
-  imageData = imageData.concat(blob.getBytes());
-  imageData = imageData.concat(Utilities.newBlob("\r\n--" + boundary + "--\r\n").getBytes());
-  sendImagetoLineNotify(imageData, token, boundary);
-}
-
 function TimerNotify() {
 	// colum C = StartDate, Colum E = StartTime
-	var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
-	var td=new Date().valueOf();	// current date
-	var sec=1000;
-	var min=60*sec;
-	var hour=60*min;
-	var day=24*hour;
-	var diff=td-hd;
-	var days=Math.floor(diff/day);
-	var hours=Math.floor(diff%day/hour);
-	var minutes=Math.floor(diff%day%hour/min);
-	Logger.log('%s days %s hours %s minutes',days,hours,minutes);
+	//var hd = new Date ((+new Date(ss_GroupDB_data[0][2])) + (+new Date(ss_GroupDB_data[0][4])) - (+new Date('1899/12/30 00:00:00'))).valueOf() ;
 
-	var day = days;
-	if (hour > 0 ||  minutes > 0)
-	{
-		day++;
-		Logger.log("day diff:"+day);
-	}
-	SendNotifyMaterial_txt(day, columText);
-	SendNotifyMaterial_image(day, columImage);
+	var Today = new Date;
+	var Today_date = Today.getDate();
+
+	SendNotifyMaterial_txt(Today_date, columText);
+	SendNotifyMaterial_image(Today_date, columImage);
 }
-
 //程式碼結束
