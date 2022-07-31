@@ -50,8 +50,8 @@ function doPost(e) {
 	// 取出 replayToken
 	var replyToken = userData.events[0].replyToken;
 	var groupID = userData.events[0].source.groupId;
-    var sourceType =(typeof data.events[0].source !== 'undefined' )? data.events[0].source.type: 'undefined';
-	var userId =  (sourceType != 'undefined' && (sourceType=='group'|| sourceType=='user' || sourceType=='room'))? data.events[0].source.userId : '';
+    var sourceType =(typeof userData.events[0].source !== 'undefined' )? userData.events[0].source.type: 'undefined';
+	var userId =  (sourceType != 'undefined' && (sourceType=='group'|| sourceType=='user' || sourceType=='room'))? userData.events[0].source.userId : '';
 
 	var Today = new Date;
 	var Today_date = Today.getDate();
@@ -64,7 +64,7 @@ function doPost(e) {
 	if (clientMessage.toLowerCase() != keyWord1.toLowerCase() && clientMessage.toLowerCase() != keyWord2.toLowerCase() && clientMessage.toLowerCase() != keyWord_regist.toLowerCase())
 	{
 		// 判斷會員輸入的是第幾天 做打卡登記
-		var retValue = checkHW_day(clientMessage); // user input
+		var retValue = checkHW_day(clientMessage.toLowerCase()); // user input
 		Logger.log(retValue);
 		if (retValue > 0)
 		{
