@@ -230,3 +230,33 @@ function SendNotifyMaterial_image(day, colum_image, notifytoken)
 		}
 	}
 }
+
+// 判斷日期
+function checkHW_day(string)
+{
+  // 判斷是否有日期資訊
+  var KeyWordHW_len = KeyWordHW.length;
+  var retValue = string.toLowerCase().search(KeyWordHW);
+  if(retValue < 0)
+  {
+    Logger.log("Not Match, return");
+    return retValue;
+  }
+  else
+  {
+    Logger.log ("keyword match from : "+retValue);
+    var data_2 = string.slice(retValue+KeyWordHW_len+1,retValue+KeyWordHW_len+2); // 判斷第二個字 是不是數字。進而判斷是 幾位數
+    Logger.log ("data_2: "+data_2);
+    if(data_2>=0 && data_2 <=9) // 2位數
+    {
+      var data_1 = string.slice(retValue+KeyWordHW_len,retValue+KeyWordHW_len+2);
+      Logger.log ("兩位數, data_1: "+data_1);
+    }
+    else //一位數
+    {
+      var data_1 = string.slice(retValue+KeyWordHW_len,retValue+KeyWordHW_len+1);
+      Logger.log ("一位數, data_1: "+data_1);
+    }
+    return data_1;
+  }
+}

@@ -27,12 +27,19 @@ var columnotifyToken= 5; // notifyToken is on Colum F
 var columRegistTime	= 6; // RegistTime is on colum G
 
 var ColumRecord		= 8; // 紀錄 開始的欄位, colum H
-var secondRoundBase	= 31;
 
+// load data from tab: Homewrok
+var ss_Homewrok 				= SS.getSheetByName("Homewrok");
+var ss_Homewrok_data 		= ss_Homewrok.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
+var colum_Homewrok_GroupID	= 0
+var colum_Homewrok_UserID	= 1
+var colum_Homewrok_UserName	= 2
+
+var secondRoundBase	= 31;
 var keyWord1 = "大家早安";    //關鍵字
 var keyWord2 = "大家午安";    //關鍵字
 var keyWord_regist = ".";    //關鍵字
-
+var KeyWordHW = "day";   //關鍵字
 
 //接收使用者訊息
 function doPost(e) {
@@ -41,6 +48,8 @@ function doPost(e) {
 	// 取出 replayToken
 	var replyToken = userData.events[0].replyToken;
 	var groupID = userData.events[0].source.groupId;
+    var sourceType =(typeof data.events[0].source !== 'undefined' )? data.events[0].source.type: 'undefined';
+	var userId =  (sourceType != 'undefined' && (sourceType=='group'|| sourceType=='user' || sourceType=='room'))? data.events[0].source.userId : '';
 
 	var Today = new Date;
 	var Today_date = Today.getDate();
