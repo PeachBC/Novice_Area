@@ -31,9 +31,11 @@ var ColumRecord		= 8; // 紀錄 開始的欄位, colum H
 // load data from tab: Homewrok
 var ss_Homewrok 				= SS.getSheetByName("Homewrok");
 var ss_Homewrok_data 		= ss_Homewrok.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
-var colum_Homewrok_GroupID	= 0
-var colum_Homewrok_UserID	= 1
-var colum_Homewrok_UserName	= 2
+var colum_Homewrok_GroupID			= 0;
+var colum_Homewrok_UserID			= 1;
+var colum_Homewrok_UserName			= 2;
+var colum_Homewrok_UserMonth		= 3;
+var colum_Homework_HW				= 4;
 
 var secondRoundBase	= 31;
 var keyWord1 = "大家早安";    //關鍵字
@@ -55,12 +57,40 @@ function doPost(e) {
 	var Today_date = Today.getDate();
 	var Today_Month = Today.getMonth()+1;
 	var DateBase = 0;
+	var userName = "測試人員QQ";
 
 	// 確認關鍵字
 	var clientMessage = userData.events[0].message.text;
 	if (clientMessage.toLowerCase() != keyWord1.toLowerCase() && clientMessage.toLowerCase() != keyWord2.toLowerCase() && clientMessage.toLowerCase() != keyWord_regist.toLowerCase())
 	{
-		// ignore;
+		// 判斷會員輸入的是第幾天 做打卡登記
+		var retValue = checkHW_day(clientMessage); // user input
+		Logger.log(retValue);
+		if (retValue > 0)
+		{
+			// 註冊發文者ID
+			var retRow = checkUser(groupID, userId, userName, Number(retValue));
+			var DayBase = 0;
+			// 判斷 要發哪天文章
+			if (Today_Month == ss_Homewrok_data[retRow-2][colum_Homewrok_UserMonth])
+			{
+				DayBase = 0;
+			}
+			else if (Today_Month == ss_Homewrok_data[retRow-2][colum_Homewrok_UserMonth]+1)
+			{
+				DayBase = secondRoundBase-1;
+			}
+			else
+			{
+				return;
+			}
+			ss_Homewrok.getRange(retRow, Number(retValue)+DayBase+colum_Homework_HW).setValue("v");		// 打卡
+			Logger.log("CheckIn for Day: "+ (Number(retValue)+DayBase));
+		}
+		else
+		{
+			Logger.log("Ignore, due to invalid day info");
+		}
 		return;
 	}
 
@@ -129,7 +159,7 @@ function doPost(e) {
 function checkGroup(groupID) {
   for (var i = 0; i < ss_GroupDB.getLastRow(); i++) {
     if (ss_GroupDB_data[i][columGroupID] == groupID && ss_GroupDB_data[i][columRegistTime] !="") {
-      Logger.log('ignore to regist groupID(%s) due to it has regist before at row(%d)', groupID, i)
+      Logger.log('ignore to regist groupID(%s) due to it has regist before at row(%d)', groupID, i);
       return i;
     }
   }
@@ -147,6 +177,31 @@ function checkGroup(groupID) {
 	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 4).setValue(nowMonth+2);	// 結束月份
 	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 7).setValue(nowMonth+"/"+nowDate);		// 註冊時間
 	return ss_GroupDB.getLastRow();
+}
+
+function checkUser(groupID, userID, userName, hwDay)
+{
+	for (var i = 0; i < ss_Homewrok.getLastRow(); i++)
+	{
+		if (ss_Homewrok_data[i][colum_Homewrok_UserID] == userID) {
+			Logger.log('ignore to regist userID(%s) due to it has regist before at row(%d)', userID, i);
+			return i+2;
+		}
+	}
+	// 如果未註冊過, 註冊 並打卡
+	ss_Homewrok.insertRowAfter(ss_Homewrok.getLastRow());
+	ss_Homewrok.getRange(ss_Homewrok.getLastRow() + 1, 1).setValue(groupID);	// 註冊GroupID
+	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 2).setValue(userID);		// 註冊UserID
+	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 3).setValue(userName);	// 註冊UserName
+
+	var now = new Date();
+	var nowMonth = now.getMonth()+1;
+
+	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 4).setValue(nowMonth);		// 開始月份
+	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), (hwDay+colum_Homework_HW)).setValue("v");			// 打卡
+	Logger.log("CheckIn for Day: "+ (hwDay));
+
+	return ss_Homewrok.getLastRow();
 }
 
 function CheckAndNotify()

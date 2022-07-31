@@ -257,6 +257,13 @@ function checkHW_day(string)
       var data_1 = string.slice(retValue+KeyWordHW_len,retValue+KeyWordHW_len+1);
       Logger.log ("一位數, data_1: "+data_1);
     }
-    return data_1;
+    if (0 < data_1 && data_1 < 31) //介於0~31之間
+    {
+      return data_1;
+    }
+    else
+    {
+      return -1;
+    }
   }
 }
