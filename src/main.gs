@@ -192,7 +192,7 @@ function checkUser(groupID, userID, userName, hwDay)
 	ss_Homewrok.insertRowAfter(ss_Homewrok.getLastRow());
 	ss_Homewrok.getRange(ss_Homewrok.getLastRow() + 1, 1).setValue(groupID);	// 註冊GroupID
 	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 2).setValue(userID);		// 註冊UserID
-	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 3).setValue(userName);	// 註冊UserName
+	//ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 3).setValue(userName);	// 註冊UserName
 
 	var now = new Date();
 	var nowMonth = now.getMonth()+1;
@@ -200,6 +200,19 @@ function checkUser(groupID, userID, userName, hwDay)
 	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 4).setValue(nowMonth);		// 開始月份
 	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), (hwDay+colum_Homework_HW)).setValue("v");			// 打卡
 	Logger.log("CheckIn for Day: "+ (hwDay));
+
+	// get UserName
+	var response = UrlFetchApp.fetch('https://api.line.me/v2/bot/group/'+groupID+'/member/'+userID+'/', {
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer "+CHANNEL_ACCESS_TOKEN,
+        "Content-Type": "application/json"
+      },
+    });
+
+    var namedata = JSON.parse(response); // 解析 json
+    var user_name = namedata.displayName; // 抓取 json 裡的 displayName
+	ss_Homewrok.getRange(ss_Homewrok.getLastRow(), 3).setValue(user_name);	// 註冊UserName
 
 	return ss_Homewrok.getLastRow();
 }
