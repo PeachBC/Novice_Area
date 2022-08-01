@@ -43,6 +43,14 @@ var keyWord2 = "大家午安";    //關鍵字
 var keyWord_regist = ".";    //關鍵字
 var KeyWordHW = "day";   //關鍵字
 
+// load data from tab: learning
+var ss_learning 			= SS.getSheetByName("learning");
+var ss_learning_data 		= ss_learning.getSheetValues(1, 2, 34, 2); //B1~B34
+var learning_colum_Data			= 0; // data is on colum B
+var learning_row_Enable			= 0;
+var learning_row_notifyToken	= 1;
+var leanring_day_base 			= 3;
+
 //接收使用者訊息
 function doPost(e) {
 	var userData = JSON.parse(e.postData.contents);
@@ -291,6 +299,35 @@ function CheckAndNotify()
 		{
 			Logger.log("Row:"+ i +" "+ ss_GroupDB_data[i][columEnable] + " " + ss_GroupDB_data[i][columnotifyToken]+ ", disable or no token");
 		}
+	}
+}
+
+function CheckAndNotify_Learning()
+{
+	var Today = new Date;
+	var Today_date = Today.getDate();
+
+	Logger.log(ss_learning_data[learning_row_Enable][learning_colum_Data] + "= ss_learning_data[learning_row_Enable][learning_colum_Data]");
+	Logger.log(ss_learning_data[learning_row_notifyToken][learning_colum_Data] + "= ss_learning_data[learning_row_notifyToken][learning_colum_Data]");
+	Logger.log(Today_date + "= Today_date.");
+
+	if (Today_date > 30)
+	{
+		Logger.log(Today_date + " is out of range.");
+		return;
+	}
+
+	// 確認 有enable 且 有token
+	if (ss_learning_data[learning_row_Enable][learning_colum_Data] == 1 && ss_learning_data[learning_row_notifyToken][learning_colum_Data] !="")
+	{
+		var dayinfo = Today_date + leanring_day_base;
+
+		Logger.log(dayinfo);
+		SendNotifyLearning_txt(dayinfo, learning_colum_Data, ss_learning_data[learning_row_notifyToken][learning_colum_Data]);
+	}
+	else
+	{
+		Logger.log("Row:"+ i +" "+ ss_learning_data[i][learning_colum_Data] + " " + ss_learning_data[i][learning_colum_Data]+ ", disable or no token");
 	}
 }
 //程式碼結束
