@@ -49,7 +49,9 @@ var ss_learning_data 		= ss_learning.getSheetValues(1, 2, 34, 2); //B1~B34
 var learning_colum_Data			= 0; // data is on colum B
 var learning_row_Enable			= 0;
 var learning_row_notifyToken	= 1;
-var leanring_day_base 			= 3;
+var learning_row_hour     	= 2;
+var learning_row_minute   	= 3;
+var leanring_day_base 			= 5;
 
 //接收使用者訊息
 function doPost(e) {
@@ -306,10 +308,8 @@ function CheckAndNotify_Learning()
 {
 	var Today = new Date;
 	var Today_date = Today.getDate();
-
-	Logger.log(ss_learning_data[learning_row_Enable][learning_colum_Data] + "= ss_learning_data[learning_row_Enable][learning_colum_Data]");
-	Logger.log(ss_learning_data[learning_row_notifyToken][learning_colum_Data] + "= ss_learning_data[learning_row_notifyToken][learning_colum_Data]");
-	Logger.log(Today_date + "= Today_date.");
+  var Today_hour = Today.getHours();
+  var Today_min = Today.getMinutes();
 
 	if (Today_date > 30)
 	{
@@ -317,6 +317,11 @@ function CheckAndNotify_Learning()
 		return;
 	}
 
+  if(ss_learning_data[learning_row_hour][learning_colum_Data] != Today_hour || ss_learning_data[learning_row_minute][learning_colum_Data] != Today_min)
+  {
+    Logger.log(Today_hour+":"+Today_min + " != " +ss_learning_data[learning_row_hour][learning_colum_Data]+":"+ss_learning_data[learning_row_minute][learning_colum_Data]);
+    return;
+  }
 	// 確認 有enable 且 有token
 	if (ss_learning_data[learning_row_Enable][learning_colum_Data] == 1 && ss_learning_data[learning_row_notifyToken][learning_colum_Data] !="")
 	{
