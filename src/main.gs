@@ -45,7 +45,7 @@ var KeyWordHW = "day";   //關鍵字
 
 // load data from tab: learning
 var ss_learning 			= SS.getSheetByName("learning");
-var ss_learning_data 		= ss_learning.getSheetValues(1, 2, 34, 2); //B1~B34
+var ss_learning_data 		= ss_learning.getSheetValues(1, 2, 50, 2); //B1~B50
 var learning_colum_Data			= 0; // data is on colum B
 var learning_row_Enable			= 0;
 var learning_row_notifyToken	= 1;
@@ -326,7 +326,7 @@ function CheckAndNotify_Learning()
 	if (ss_learning_data[learning_row_Enable][learning_colum_Data] == 1 && ss_learning_data[learning_row_notifyToken][learning_colum_Data] !="")
 	{
 		var dayinfo = Today_date + leanring_day_base;
-
+    //var dayinfo = 30 + leanring_day_base; //debug usage
 		Logger.log(dayinfo);
 		SendNotifyLearning_txt(dayinfo, learning_colum_Data, ss_learning_data[learning_row_notifyToken][learning_colum_Data]);
 	}
