@@ -151,8 +151,13 @@ function sendReplyVideo(CHANNEL_ACCESS_TOKEN, replyToken, videoURL, thumbnailURL
 }
 
 // send material_txt to LineGroup
-function SendReplyMaterial_txt(day, colum_text, replyToken)
+function SendReplyMaterial_txt(day, colum_text, replyToken, groupRow)
 {
+    //load data by Group's sheet -> material (分散式資料庫)
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+  var ss_material 			= SpreadsheetApp.openById(sheetid).getSheetByName("material");
+  var ss_material_data 		= ss_material.getSheetValues(2, 1, 63, 26); //A2~Z63
+
 	if (ss_material_data[day][colum_text] != "")
 	{
 		Logger.log(ss_material_data[day][colum_text]);
@@ -161,8 +166,13 @@ function SendReplyMaterial_txt(day, colum_text, replyToken)
 }
 
 // send material_image to LineGroup
-function SendReplyMaterial_image(day, colum_image, replyToken)
+function SendReplyMaterial_image(day, colum_image, replyToken, groupRow)
 {
+  //load data by Group's sheet -> material (分散式資料庫)
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+  var ss_material 			= SpreadsheetApp.openById(sheetid).getSheetByName("material");
+  var ss_material_data 		= ss_material.getSheetValues(2, 1, 63, 26); //A2~Z63
+
 	for (x = colum_image; x <= ss_material.getLastRow(); x++)
 	{
 		if (ss_material_data[day][x] != "")
@@ -174,8 +184,13 @@ function SendReplyMaterial_image(day, colum_image, replyToken)
 }
 
 // send material_video to LineGroup
-function SendReplyMaterial_video(day, colum_video, replyToken)
+function SendReplyMaterial_video(day, colum_video, replyToken, groupRow)
 {
+  //load data by Group's sheet -> material (分散式資料庫)
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+  var ss_material 			= SpreadsheetApp.openById(sheetid).getSheetByName("material");
+  var ss_material_data 		= ss_material.getSheetValues(2, 1, 63, 26); //A2~Z63
+
 	if (ss_material_data[day][colum_video] != "" && ss_material_data[day][colum_video+1] != "")
 	{
 		Logger.log(ss_material_data[day][colum_video]);
@@ -209,18 +224,29 @@ function sendNotifyImage(CHANNEL_ACCESS_TOKEN, imageURL, thumbnailURL) {
 }
 
 // send material_txt to LineGroup
-function SendNotifyMaterial_txt(day, colum_text, notifytoken)
+function SendNotifyMaterial_txt(day, colum_text, notifytoken, groupRow)
 {
+  //load data by Group's sheet -> material (分散式資料庫)
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+  var ss_material 			= SpreadsheetApp.openById(sheetid).getSheetByName("material");
+  var ss_material_data 		= ss_material.getSheetValues(2, 1, 63, 26); //A2~Z63
+
 	if (ss_material_data[day][colum_text] != "")
 	{
 		Logger.log(ss_material_data[day][colum_text]);
+    Logger.log(notifytoken);
 		sendNotifyMessage(notifytoken, "\n"+ss_material_data[day][colum_text]);
 	}
 }
 
 // send material_image to LineGroup
-function SendNotifyMaterial_image(day, colum_image, notifytoken)
+function SendNotifyMaterial_image(day, colum_image, notifytoken, groupRow)
 {
+  //load data by Group's sheet -> material (分散式資料庫)
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+  var ss_material 			= SpreadsheetApp.openById(sheetid).getSheetByName("material");
+  var ss_material_data 		= ss_material.getSheetValues(2, 1, 63, 26); //A2~Z63
+
 	for (x = colum_image; x <= ss_material.getLastRow() && ss_material_data[day][x] != ""; x++)
 	{
 		if (ss_material_data[day][x] != "")
@@ -265,6 +291,75 @@ function checkHW_day(string)
     {
       return -1;
     }
+  }
+}
+
+
+// 判斷Sheet
+function checkSheet(string)
+{
+  // 判斷是否包含該字串
+  var retValue = string.toLowerCase().search(KeyWordSheet);
+  if(retValue < 0)
+  {
+    Logger.log("Not Match, return");
+    return retValue;
+  }
+  else
+  {
+    Logger.log ("checkSheet return TRUE !");
+    return 1;
+  }
+}
+
+// 判斷Token
+function checkToken(string)
+{
+  // 判斷是否包含該字串
+  var retValue = string.toLowerCase().search(KeyWordToken);
+  if(retValue < 0)
+  {
+    Logger.log("Not Match, return");
+    return retValue;
+  }
+  else
+  {
+    Logger.log ("checkToken return TRUE !");
+    return 1;
+  }
+}
+
+// 判斷StartMonth
+function checkStartMonth(string)
+{
+  // 判斷是否包含該字串
+  var retValue = string.toLowerCase().search(KeyWordStartMonth);
+  if(retValue < 0)
+  {
+    Logger.log("Not Match, return");
+    return retValue;
+  }
+  else
+  {
+    Logger.log ("checkStartMonth return TRUE !");
+    return 1;
+  }
+}
+
+// 判斷Auto
+function checkAuto(string)
+{
+  // 判斷是否包含該字串
+  var retValue = string.toLowerCase().search(KeyWordAuto);
+  if(retValue < 0)
+  {
+    Logger.log("Not Match, return");
+    return retValue;
+  }
+  else
+  {
+    Logger.log ("checkAuto return TRUE !");
+    return 1;
   }
 }
 

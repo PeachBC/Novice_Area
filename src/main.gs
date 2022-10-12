@@ -1,57 +1,49 @@
 //程式碼開始
+//load data from main sheet
 var SS 						= SpreadsheetApp.getActive();
 
-// load data from tab> config
+// load data from tab: config
 var ss_config 				= SS.getSheetByName("config");
 var ss_config_data 			= ss_config.getSheetValues(2, 2, 20, 2); //B2~B20
 var CHANNEL_ACCESS_TOKEN 	= ss_config_data[0][0].replace(/\r?\n|\r/g, ""); //line bot token	，並消除換行符號（避免有人複製貼上時複製到換行符號）
-
-var sheetID 				= ss_config_data[1][0]; // google sheet ID
-
-// load data from tab: material
-var ss_material 			= SS.getSheetByName("material");
-var ss_material_data 		= ss_material.getSheetValues(2, 1, 63, 26); //A2~Z63
-var columText	= 1; // text is on colum B
-var columVideo	= 2; // video is on colum C
-var columImage	= 4; // image/slide is start from colum E
+//var sheetID 				= ss_config_data[1][0]; // google sheet ID
 
 // load data from tab: GroupDB
 var ss_GroupDB 				= SS.getSheetByName("GroupDB");
 var ss_GroupDB_data 		= ss_GroupDB.getSheetValues(2, 1, 51, 70); //A2~70,51, max support group count = 50
 var CHANNEL_ACCESS_TOKEN_LINENOTIFY 	= ss_GroupDB_data[0][5].replace(/\r?\n|\r/g, ""); //F2, line notify token	，並消除換行符號（避免有人複製貼上時複製到換行符號）
-var columGroupID	= 0; // GroupID is on colum A
-var columEnable		= 1; // text is on colum B
-var columStartMonth	= 2; // startMonth is on Colum C
-var columEndMonth	= 3; // EndMonth is on Colum D
-var columnotifyToken= 5; // notifyToken is on Colum F
-var columRegistTime	= 6; // RegistTime is on colum G
+var columGroupID	  = 0; // colum A GroupID
+var columEnable		  = 1; // colum B enable or not
+var columStartMonth	= 2; // Colum C startMonth
+var columEndMonth	  = 3; // Colum D EndMonth
+var columAuto	      = 6; // colum G auto
+var columSheet	    = 7; // colum G RegistSheet
+var columnotifyToken= 8; // Colum H notifyToken
+var columRegistTime	= 8; // colum I RegistTime
+var ColumRecord		  = 10; // 紀錄 開始的欄位, colum J
 
-var ColumRecord		= 8; // 紀錄 開始的欄位, colum H
+//load data by Group's sheet -> material (分散式資料庫)
+var columText	= 1; // text is on colum B
+var columVideo	= 2; // video is on colum C
+var columImage	= 4; // image/slide is start from colum E
 
 // load data from tab: Homewrok
-var ss_Homewrok 				= SS.getSheetByName("Homewrok");
-var ss_Homewrok_data 		= ss_Homewrok.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
 var colum_Homewrok_GroupID			= 0;
 var colum_Homewrok_UserID			= 1;
 var colum_Homewrok_UserName			= 2;
 var colum_Homewrok_UserMonth		= 3;
 var colum_Homework_HW				= 4;
 
+
 var secondRoundBase	= 31;
 var keyWord1 = "大家早安";    //關鍵字
 var keyWord2 = "大家午安";    //關鍵字
 var keyWord_regist = ".";    //關鍵字
 var KeyWordHW = "day";   //關鍵字
-
-// load data from tab: learning
-var ss_learning 			= SS.getSheetByName("learning");
-var ss_learning_data 		= ss_learning.getSheetValues(1, 2, 50, 2); //B1~B50
-var learning_colum_Data			= 0; // data is on colum B
-var learning_row_Enable			= 0;
-var learning_row_notifyToken	= 1;
-var learning_row_hour     	= 2;
-var learning_row_minute   	= 3;
-var leanring_day_base 			= 5;
+var KeyWordSheet = "sheet=";   //關鍵字
+var KeyWordToken = "token=";   //關鍵字
+var KeyWordStartMonth = "start=";   //關鍵字
+var KeyWordAuto = "auto=";   //關鍵字
 
 //接收使用者訊息
 function doPost(e) {
@@ -71,22 +63,34 @@ function doPost(e) {
 
 	// 確認關鍵字
 	var clientMessage = userData.events[0].message.text;
-	if (clientMessage.toLowerCase() != keyWord1.toLowerCase() && clientMessage.toLowerCase() != keyWord2.toLowerCase() && clientMessage.toLowerCase() != keyWord_regist.toLowerCase())
+  var retValue_sheet = checkSheet(clientMessage.toLowerCase());
+  var retValue_token = checkToken(clientMessage.toLowerCase());
+  var retValue_auto = checkAuto(clientMessage.toLowerCase());
+  var retValue_startmonth = checkStartMonth(clientMessage.toLowerCase());
+  	// check which group is trigger bot
+	var groupRow = checkGroup(groupID, userId);
+	if (clientMessage.toLowerCase() != keyWord1.toLowerCase() && clientMessage.toLowerCase() != keyWord2.toLowerCase() && clientMessage.toLowerCase() != keyWord_regist.toLowerCase() && retValue_sheet != 1 && retValue_token != 1 && retValue_startmonth != 1 && retValue_auto != 1)
 	{
+    //load data by Group's sheet -> Homewrok (分散式資料庫)
+    var sheetid_main 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+    var ss_Homewrok_main 				= SpreadsheetApp.openById(sheetid_main).getSheetByName("Homewrok");
+    var ss_Homewrok_data_Main 		= ss_Homewrok_main.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
+
 		// 判斷會員輸入的是第幾天 做打卡登記
 		var retValue = checkHW_day(clientMessage.toLowerCase()); // user input
 		Logger.log(retValue);
 		if (retValue > 0)
 		{
 			// 註冊發文者ID
-			var retRow = checkUser(groupID, userId, userName, Number(retValue));
+			var retRow = checkUser(groupID, userId, userName, Number(retValue), groupRow);
 			var DayBase = 0;
-			// 判斷 要發哪天文章
-			if (Today_Month == ss_Homewrok_data[retRow-2][colum_Homewrok_UserMonth])
+
+			// 判斷 要打卡哪天文章
+			if (Today_Month == ss_Homewrok_data_Main[retRow-2][colum_Homewrok_UserMonth])
 			{
 				DayBase = 0;
 			}
-			else if (Today_Month == ss_Homewrok_data[retRow-2][colum_Homewrok_UserMonth]+1)
+			else if (Today_Month == ss_Homewrok_data_Main[retRow-2][colum_Homewrok_UserMonth]+1)
 			{
 				DayBase = secondRoundBase-1;
 			}
@@ -94,7 +98,7 @@ function doPost(e) {
 			{
 				return;
 			}
-			ss_Homewrok.getRange(retRow, Number(retValue)+DayBase+colum_Homework_HW).setValue("v");		// 打卡
+			ss_Homewrok_main.getRange(retRow, Number(retValue)+DayBase+colum_Homework_HW).setValue("v");		// 打卡
 			Logger.log("CheckIn for Day: "+ (Number(retValue)+DayBase));
 		}
 		else
@@ -104,15 +108,91 @@ function doPost(e) {
 		return;
 	}
 
-	// check which group is trigger bot
-	var groupRow = checkGroup(groupID);
-
 	// keyWord_regist 註冊用 for notify token
 	if (clientMessage.toLowerCase() == keyWord_regist.toLowerCase())
 	{
 		// just for regist;
 		return;
 	}
+
+  //regist for sheet
+  if (retValue_sheet == 1)
+  {
+    ss_GroupDB.getRange(groupRow+2, columSheet).setValue(clientMessage.slice(45,89));
+    return;
+  }
+
+  //regist for token
+  if (retValue_token == 1)
+  {
+    ss_GroupDB.getRange(groupRow+2, columnotifyToken).setValue(clientMessage.slice(6,50));
+    return;
+  }
+
+  //setup checkAuto
+  if(retValue_auto == 1)
+  {
+    ss_GroupDB.getRange(groupRow+2, 6).setValue(clientMessage.slice(5,6));
+    return;
+  }
+
+  //setup for start month & end month
+  if (retValue_startmonth == 1)
+  {
+      switch(clientMessage.slice(6,8))
+      {
+        case "01":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(1);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(2);
+          break;
+        case "02":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(2);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(3);
+          break;
+        case "03":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(3);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(4);
+          break;
+        case "04":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(4);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(5);
+          break;
+        case "05":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(5);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(6);
+          break;
+        case "06":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(6);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(7);
+          break;
+        case "07":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(7);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(8);
+          break;
+        case "08":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(8);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(9);
+          break;
+        case "09":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(9);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(10);
+          break;
+        case "10":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(10);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(11);
+          break;
+        case "11":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(11);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(12);
+          break;
+        case "12":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(12);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(1);
+          break;
+        default:
+          break;
+      }
+  }
 
 	if (Today_date > 30)
 	{
@@ -121,7 +201,7 @@ function doPost(e) {
 	}
 
 	// 確認 是否enable 且 有token
-	if (ss_GroupDB_data[groupRow][columEnable] != 1 || ss_GroupDB_data[groupRow][columnotifyToken] =="")
+	if (ss_GroupDB_data[groupRow][columEnable] != 1 || ss_GroupDB_data[groupRow][columnotifyToken-1] =="")
 	{
 		Logger.log("disable");
 		return;
@@ -155,18 +235,19 @@ function doPost(e) {
 	// 判斷是否發過文
 	if (ss_GroupDB_data[groupRow][dayinfo-1] != "")
 	{
-		Logger.log("已發過文");
+		Logger.log("已回應過文, skip");
 		return;
 	}
+
 	// 發文
-	//SendReplyMaterial_txt(Day, columText, replyToken);
-	SendReplyMaterial_video(Day, columVideo, replyToken);
+	//SendReplyMaterial_txt(Day, columText, replyToken, groupRow);
+	SendReplyMaterial_video(Day, columVideo, replyToken, groupRow);
 
 	// 發文後 做紀錄
 	ss_GroupDB.getRange(groupRow+2, dayinfo).setValue(1);
 }
 
-function checkGroup(groupID) {
+function checkGroup(groupID, userID) {
   for (var i = 0; i < ss_GroupDB.getLastRow(); i++) {
     if (ss_GroupDB_data[i][columGroupID] == groupID && ss_GroupDB_data[i][columRegistTime] !="") {
       Logger.log('ignore to regist groupID(%s) due to it has regist before at row(%d)', groupID, i);
@@ -183,14 +264,33 @@ function checkGroup(groupID) {
 	var nowMonth = now.getMonth()+1;
 
 	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 2).setValue(1);			// enable 
-	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 3).setValue(nowMonth+1);	// 開始月份
-	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 4).setValue(nowMonth+2);	// 結束月份
-	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 7).setValue(nowMonth+"/"+nowDate);		// 註冊時間
+	//ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 3).setValue(nowMonth+1);	// 開始月份
+	//ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 4).setValue(nowMonth+2);	// 結束月份
+	//ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 9).setValue(nowMonth+"/"+nowDate);		// 註冊時間
+
+	// get UserName
+	var response = UrlFetchApp.fetch('https://api.line.me/v2/bot/group/'+groupID+'/member/'+userID+'/', {
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer "+CHANNEL_ACCESS_TOKEN,
+        "Content-Type": "application/json"
+      },
+    });
+
+  var namedata = JSON.parse(response); // 解析 json
+  var user_name = namedata.displayName; // 抓取 json 裡的 displayName
+  ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 9).setValue(user_name);		// 註冊UserName
+
 	return ss_GroupDB.getLastRow();
 }
 
-function checkUser(groupID, userID, userName, hwDay)
+function checkUser(groupID, userID, userName, hwDay, groupRow)
 {
+  //load data by Group's sheet -> Homewrok (分散式資料庫)
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+  var ss_Homewrok 				= SpreadsheetApp.openById(sheetid).getSheetByName("Homewrok");
+  var ss_Homewrok_data 		= ss_Homewrok.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
+
 	for (var i = 0; i < ss_Homewrok.getLastRow(); i++)
 	{
 		if (ss_Homewrok_data[i][colum_Homewrok_UserID] == userID) {
@@ -232,6 +332,8 @@ function CheckAndNotify()
 	var Today = new Date;
 	var Today_date = Today.getDate();
 	var Today_Month = Today.getMonth()+1;
+  var Today_hour = Today.getHours();
+  var Today_min = Today.getMinutes();
 
 	Logger.log(Today_date + "= Today_date.");
 
@@ -240,10 +342,11 @@ function CheckAndNotify()
 		Logger.log(Today_date + " is out of range.");
 		return;
 	}
+
 	for (var i = 0; i < ss_GroupDB.getLastRow()-1; i++)
 	{
 		// 確認 有enable 且 有token
-		if (ss_GroupDB_data[i][columEnable] == 1 && ss_GroupDB_data[i][columnotifyToken] !="")
+		if (ss_GroupDB_data[i][columEnable] == 1 && ss_GroupDB_data[i][columnotifyToken-1] !="")
 		{
 			// 判斷 要發哪天文章
 			if (Today_Month == ss_GroupDB_data[i][columStartMonth])
@@ -263,11 +366,28 @@ function CheckAndNotify()
 			
 			var dayinfo = Day + ColumRecord;
 
-			if (ss_GroupDB_data[i][dayinfo-1] == 1)
+      // auto post
+      var bAuto = ss_GroupDB_data[i][columAuto-1];
+      var bPostByAuto=0;
+      if(bAuto == 1)
+      {
+        if(9 != Today_hour || 10 != Today_min)
+        {
+          Logger.log(Today_hour+":"+Today_min + " != 9:10");
+          continue;
+        }
+        else
+        {
+          bPostByAuto = 1;
+        }
+      }
+      Logger.log(bPostByAuto);
+
+			if (ss_GroupDB_data[i][dayinfo-1] == 1 || (bAuto == 1 && bPostByAuto == 1))
 			{
 				Logger.log("已發過影片 > 發文");
-				SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken]);
-				SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken]);
+				SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken-1], i);
+				SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken-1], i);
 
 				ss_GroupDB.getRange(i+2, dayinfo).setValue(2);
 			}
@@ -282,11 +402,11 @@ function CheckAndNotify()
 				Day = 0;
 				dayinfo = Day + ColumRecord;
 
-				if (ss_GroupDB_data[i][dayinfo-1] == 1)
+				if (ss_GroupDB_data[i][dayinfo-1] == 1 || bPostByAuto == 1)
 				{
 					Logger.log("已發過影片 > 發文");
-					SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken]);
-					SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken]);
+					SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken-1], i);
+					SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken-1], i);
 
 					ss_GroupDB.getRange(i+2, dayinfo).setValue(2);
 				}
@@ -299,40 +419,9 @@ function CheckAndNotify()
 		}
 		else
 		{
-			Logger.log("Row:"+ i +" "+ ss_GroupDB_data[i][columEnable] + " " + ss_GroupDB_data[i][columnotifyToken]+ ", disable or no token");
+			Logger.log("Row:"+ i +" "+ ss_GroupDB_data[i][columEnable] + " " + ss_GroupDB_data[i][columnotifyToken-1]+ ", disable or no token");
 		}
 	}
 }
 
-function CheckAndNotify_Learning()
-{
-	var Today = new Date;
-	var Today_date = Today.getDate();
-  var Today_hour = Today.getHours();
-  var Today_min = Today.getMinutes();
-
-	if (Today_date > 30)
-	{
-		Logger.log(Today_date + " is out of range.");
-		return;
-	}
-
-  if(ss_learning_data[learning_row_hour][learning_colum_Data] != Today_hour || ss_learning_data[learning_row_minute][learning_colum_Data] != Today_min)
-  {
-    Logger.log(Today_hour+":"+Today_min + " != " +ss_learning_data[learning_row_hour][learning_colum_Data]+":"+ss_learning_data[learning_row_minute][learning_colum_Data]);
-    return;
-  }
-	// 確認 有enable 且 有token
-	if (ss_learning_data[learning_row_Enable][learning_colum_Data] == 1 && ss_learning_data[learning_row_notifyToken][learning_colum_Data] !="")
-	{
-		var dayinfo = Today_date + leanring_day_base;
-    //var dayinfo = 30 + leanring_day_base; //debug usage
-		Logger.log(dayinfo);
-		SendNotifyLearning_txt(dayinfo, learning_colum_Data, ss_learning_data[learning_row_notifyToken][learning_colum_Data]);
-	}
-	else
-	{
-		Logger.log("Row:"+ i +" "+ ss_learning_data[i][learning_colum_Data] + " " + ss_learning_data[i][learning_colum_Data]+ ", disable or no token");
-	}
-}
 //程式碼結束
