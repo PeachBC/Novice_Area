@@ -362,3 +362,13 @@ function checkAuto(string)
     return 1;
   }
 }
+
+// send Learning_txt to LineGroup
+function SendNotifyLearning_txt(day, colum_text, notifytoken)
+{
+	if (ss_learning_data[day][colum_text] != "")
+	{
+		Logger.log(ss_learning_data[day][colum_text]);
+		sendNotifyMessage(notifytoken, "\n"+ss_learning_data[day][colum_text]);
+	}
+}

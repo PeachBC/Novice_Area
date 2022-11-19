@@ -12,20 +12,15 @@ var CHANNEL_ACCESS_TOKEN 	= ss_config_data[0][0].replace(/\r?\n|\r/g, ""); //lin
 var ss_GroupDB 				= SS.getSheetByName("GroupDB");
 var ss_GroupDB_data 		= ss_GroupDB.getSheetValues(2, 1, 51, 70); //A2~70,51, max support group count = 50
 var CHANNEL_ACCESS_TOKEN_LINENOTIFY 	= ss_GroupDB_data[0][5].replace(/\r?\n|\r/g, ""); //F2, line notify token	，並消除換行符號（避免有人複製貼上時複製到換行符號）
-
-// index for GetValue usage
-var columGroupID		= 0; // colum A GroupID
-var columEnable			= 1; // colum B enable or not
-var columStartMonth		= 2; // Colum C startMonth
-var columEndMonth		= 3; // Colum D EndMonth
-							 // Colum E 保留
-var columAuto	      	= 5; // colum F auto
-var columSheet	    	= 6; // colum G RegistSheet
-var columnotifyToken	= 7; // Colum H notifyToken
-var columRegistName		= 8; // colum I RegistName
-var ColumRecord		  	= 10; // 紀錄(Day1) 開始的欄位, colum K
-//offset between GetValue & SetValue
-var offset_Get_Set		= 1;
+var columGroupID	  = 0; // colum A GroupID
+var columEnable		  = 1; // colum B enable or not
+var columStartMonth	= 2; // Colum C startMonth
+var columEndMonth	  = 3; // Colum D EndMonth
+var columAuto	      = 6; // colum G auto
+var columSheet	    = 7; // colum G RegistSheet
+var columnotifyToken= 8; // Colum H notifyToken
+var columRegistTime	= 8; // colum I RegistTime
+var ColumRecord		  = 10; // 紀錄 開始的欄位, colum J
 
 //load data by Group's sheet -> material (分散式資料庫)
 var columText	= 1; // text is on colum B
@@ -68,18 +63,18 @@ function doPost(e) {
 
 	// 確認關鍵字
 	var clientMessage = userData.events[0].message.text;
-	var retValue_sheet = checkSheet(clientMessage.toLowerCase());
-	var retValue_token = checkToken(clientMessage.toLowerCase());
-	var retValue_auto = checkAuto(clientMessage.toLowerCase());
-	var retValue_startmonth = checkStartMonth(clientMessage.toLowerCase());
-	// check which group is trigger bot
+  var retValue_sheet = checkSheet(clientMessage.toLowerCase());
+  var retValue_token = checkToken(clientMessage.toLowerCase());
+  var retValue_auto = checkAuto(clientMessage.toLowerCase());
+  var retValue_startmonth = checkStartMonth(clientMessage.toLowerCase());
+  	// check which group is trigger bot
 	var groupRow = checkGroup(groupID, userId);
 	if (clientMessage.toLowerCase() != keyWord1.toLowerCase() && clientMessage.toLowerCase() != keyWord2.toLowerCase() && clientMessage.toLowerCase() != keyWord_regist.toLowerCase() && retValue_sheet != 1 && retValue_token != 1 && retValue_startmonth != 1 && retValue_auto != 1)
 	{
-		//load data by Group's sheet -> Homewrok (分散式資料庫)
-		var sheetid_main 			= ss_GroupDB_data[groupRow][columSheet]; // google sheet ID
-		var ss_Homewrok_main 		= SpreadsheetApp.openById(sheetid_main).getSheetByName("Homewrok");
-		var ss_Homewrok_data_Main 	= ss_Homewrok_main.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
+    //load data by Group's sheet -> Homewrok (分散式資料庫)
+    var sheetid_main 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
+    var ss_Homewrok_main 				= SpreadsheetApp.openById(sheetid_main).getSheetByName("Homewrok");
+    var ss_Homewrok_data_Main 		= ss_Homewrok_main.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
 
 		// 判斷會員輸入的是第幾天 做打卡登記
 		var retValue = checkHW_day(clientMessage.toLowerCase()); // user input
@@ -120,84 +115,84 @@ function doPost(e) {
 		return;
 	}
 
-	//regist for sheet
-	if (retValue_sheet == 1)
-	{
-		ss_GroupDB.getRange(groupRow+2, columSheet + offset_Get_Set).setValue(clientMessage.slice(45,89));
-		return;
-	}
+  //regist for sheet
+  if (retValue_sheet == 1)
+  {
+    ss_GroupDB.getRange(groupRow+2, columSheet).setValue(clientMessage.slice(45,89));
+    return;
+  }
 
-	//regist for token
-	if (retValue_token == 1)
-	{
-		ss_GroupDB.getRange(groupRow+2, columnotifyToken + offset_Get_Set).setValue(clientMessage.slice(6,50));
-		return;
-	}
+  //regist for token
+  if (retValue_token == 1)
+  {
+    ss_GroupDB.getRange(groupRow+2, columnotifyToken).setValue(clientMessage.slice(6,50));
+    return;
+  }
 
-	//setup checkAuto
-	if(retValue_auto == 1)
-	{
-		ss_GroupDB.getRange(groupRow+2, columAuto + offset_Get_Set).setValue(clientMessage.slice(5,6));
-		return;
-	}
+  //setup checkAuto
+  if(retValue_auto == 1)
+  {
+    ss_GroupDB.getRange(groupRow+2, 6).setValue(clientMessage.slice(5,6));
+    return;
+  }
 
-	//setup for start month & end month
-	if (retValue_startmonth == 1)
-	{
-		switch(clientMessage.slice(6,8))
-		{
-			case "01":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(1);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(2);
-				break;
-			case "02":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(2);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(3);
-				break;
-			case "03":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(3);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(4);
-				break;
-			case "04":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(4);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(5);
-				break;
-			case "05":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(5);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(6);
-				break;
-			case "06":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(6);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(7);
-				break;
-			case "07":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(7);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(8);
-				break;
-			case "08":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(8);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(9);
-				break;
-			case "09":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(9);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(10);
-				break;
-			case "10":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(10);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(11);
-				break;
-			case "11":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(11);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(12);
-				break;
-			case "12":
-				ss_GroupDB.getRange(groupRow+2, columStartMonth + offset_Get_Set).setValue(12);
-				ss_GroupDB.getRange(groupRow+2, columEndMonth+ offset_Get_Set).setValue(1);
-				break;
-			default:
-				break;
-		}
-	}
+  //setup for start month & end month
+  if (retValue_startmonth == 1)
+  {
+      switch(clientMessage.slice(6,8))
+      {
+        case "01":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(1);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(2);
+          break;
+        case "02":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(2);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(3);
+          break;
+        case "03":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(3);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(4);
+          break;
+        case "04":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(4);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(5);
+          break;
+        case "05":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(5);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(6);
+          break;
+        case "06":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(6);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(7);
+          break;
+        case "07":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(7);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(8);
+          break;
+        case "08":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(8);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(9);
+          break;
+        case "09":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(9);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(10);
+          break;
+        case "10":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(10);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(11);
+          break;
+        case "11":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(11);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(12);
+          break;
+        case "12":
+          ss_GroupDB.getRange(groupRow+2, 3).setValue(12);
+          ss_GroupDB.getRange(groupRow+2, 4).setValue(1);
+          break;
+        default:
+          break;
+      }
+  }
 
 	if (Today_date > 30)
 	{
@@ -206,7 +201,7 @@ function doPost(e) {
 	}
 
 	// 確認 是否enable 且 有token
-	if (ss_GroupDB_data[groupRow][columEnable] != 1 || ss_GroupDB_data[groupRow][columnotifyToken] =="")
+	if (ss_GroupDB_data[groupRow][columEnable] != 1 || ss_GroupDB_data[groupRow][columnotifyToken-1] =="")
 	{
 		Logger.log("disable");
 		return;
@@ -254,7 +249,7 @@ function doPost(e) {
 
 function checkGroup(groupID, userID) {
   for (var i = 0; i < ss_GroupDB.getLastRow(); i++) {
-    if (ss_GroupDB_data[i][columGroupID] == groupID && ss_GroupDB_data[i][columRegistName] !="") {
+    if (ss_GroupDB_data[i][columGroupID] == groupID && ss_GroupDB_data[i][columRegistTime] !="") {
       Logger.log('ignore to regist groupID(%s) due to it has regist before at row(%d)', groupID, i);
       return i;
     }
@@ -262,13 +257,13 @@ function checkGroup(groupID, userID) {
 	// 如果群組未註冊過
 	// 註冊群組ID
 	ss_GroupDB.insertRowAfter(ss_GroupDB.getLastRow());
-	ss_GroupDB.getRange(ss_GroupDB.getLastRow() + 1, columGroupID + offset_Get_Set).setValue(groupID);
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow() + 1, 1).setValue(groupID);
 
 	var now = new Date();
 	var nowDate = now.getDate();
 	var nowMonth = now.getMonth()+1;
 
-	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), columEnable + offset_Get_Set).setValue(1);		// enable 
+	ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 2).setValue(1);			// enable 
 	//ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 3).setValue(nowMonth+1);	// 開始月份
 	//ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 4).setValue(nowMonth+2);	// 結束月份
 	//ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 9).setValue(nowMonth+"/"+nowDate);		// 註冊時間
@@ -284,7 +279,7 @@ function checkGroup(groupID, userID) {
 
   var namedata = JSON.parse(response); // 解析 json
   var user_name = namedata.displayName; // 抓取 json 裡的 displayName
-  ss_GroupDB.getRange(ss_GroupDB.getLastRow(), columRegistName + offset_Get_Set).setValue(user_name);		// 註冊UserName
+  ss_GroupDB.getRange(ss_GroupDB.getLastRow(), 9).setValue(user_name);		// 註冊UserName
 
 	return ss_GroupDB.getLastRow();
 }
@@ -292,7 +287,7 @@ function checkGroup(groupID, userID) {
 function checkUser(groupID, userID, userName, hwDay, groupRow)
 {
   //load data by Group's sheet -> Homewrok (分散式資料庫)
-  var sheetid 				= ss_GroupDB_data[groupRow][columSheet]; // google sheet ID
+  var sheetid 				= ss_GroupDB_data[groupRow][columSheet-1]; // google sheet ID
   var ss_Homewrok 				= SpreadsheetApp.openById(sheetid).getSheetByName("Homewrok");
   var ss_Homewrok_data 		= ss_Homewrok.getSheetValues(2, 1, 999, 70); //A2~70,100, max support people count = 999
 
@@ -337,8 +332,8 @@ function CheckAndNotify()
 	var Today = new Date;
 	var Today_date = Today.getDate();
 	var Today_Month = Today.getMonth()+1;
-	var Today_hour = Today.getHours();
-	var Today_min = Today.getMinutes();
+  var Today_hour = Today.getHours();
+  var Today_min = Today.getMinutes();
 
 	Logger.log(Today_date + "= Today_date.");
 
@@ -351,7 +346,7 @@ function CheckAndNotify()
 	for (var i = 0; i < ss_GroupDB.getLastRow()-1; i++)
 	{
 		// 確認 有enable 且 有token
-		if (ss_GroupDB_data[i][columEnable] == 1 && ss_GroupDB_data[i][columnotifyToken] !="")
+		if (ss_GroupDB_data[i][columEnable] == 1 && ss_GroupDB_data[i][columnotifyToken-1] !="")
 		{
 			// 判斷 要發哪天文章
 			if (Today_Month == ss_GroupDB_data[i][columStartMonth])
@@ -372,7 +367,7 @@ function CheckAndNotify()
 			var dayinfo = Day + ColumRecord;
 
       // auto post
-      var bAuto = ss_GroupDB_data[i][columAuto];
+      var bAuto = ss_GroupDB_data[i][columAuto-1];
       var bPostByAuto=0;
       if(bAuto == 1)
       {
@@ -391,8 +386,8 @@ function CheckAndNotify()
 			if (ss_GroupDB_data[i][dayinfo-1] == 1 || (bAuto == 1 && bPostByAuto == 1))
 			{
 				Logger.log("已發過影片 > 發文");
-				SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken], i);
-				SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken], i);
+				SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken-1], i);
+				SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken-1], i);
 
 				ss_GroupDB.getRange(i+2, dayinfo).setValue(2);
 			}
@@ -410,8 +405,8 @@ function CheckAndNotify()
 				if (ss_GroupDB_data[i][dayinfo-1] == 1 || bPostByAuto == 1)
 				{
 					Logger.log("已發過影片 > 發文");
-					SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken], i);
-					SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken], i);
+					SendNotifyMaterial_txt(Day, columText, ss_GroupDB_data[i][columnotifyToken-1], i);
+					SendNotifyMaterial_image(Day, columImage, ss_GroupDB_data[i][columnotifyToken-1], i);
 
 					ss_GroupDB.getRange(i+2, dayinfo).setValue(2);
 				}
@@ -424,7 +419,7 @@ function CheckAndNotify()
 		}
 		else
 		{
-			Logger.log("Row:"+ i +" "+ ss_GroupDB_data[i][columEnable] + " " + ss_GroupDB_data[i][columnotifyToken]+ ", disable or no token");
+			Logger.log("Row:"+ i +" "+ ss_GroupDB_data[i][columEnable] + " " + ss_GroupDB_data[i][columnotifyToken-1]+ ", disable or no token");
 		}
 	}
 }
